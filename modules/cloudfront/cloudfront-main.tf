@@ -1,15 +1,6 @@
-variable "env" {
-  description = "Environment name"
-  default     = "dev"
-}
-
-variable "s3_origin" {
-  description = "S3 bucket regional domain name"
-  type        = string
-}
 
 resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = "FrontendOAC-${var.env}"
+  name                              = "tickup-oac-${var.env}"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -22,7 +13,7 @@ resource "aws_cloudfront_distribution" "cdn" {
 
   origin {
     domain_name              = var.s3_origin
-    origin_id                = "frontend-s3-origin"
+    origin_id                = "tickup-s3-origin"
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
 
     s3_origin_config {
@@ -31,10 +22,9 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "frontend-s3-origin"
-
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "tickup-s3-origin"
     viewer_protocol_policy = "redirect-to-https"
 
     forwarded_values {
@@ -49,17 +39,18 @@ resource "aws_cloudfront_distribution" "cdn" {
     max_ttl     = 86400
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
   }
 
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
   tags = {
+    Name        = "tickup-prod-distribution"
     Environment = var.env
   }
 }
